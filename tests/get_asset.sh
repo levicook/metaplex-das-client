@@ -22,11 +22,6 @@ ASSET_IDS=(
   "AKo9P7S8FE9NYeAcrtZEpimwQAXJMp8Lrt8p4dMkHkY2"
 )
 
-if [ -z "$RPC_URL" ]; then
-    echo "Error: RPC_URL is not set or empty."
-    exit 1
-fi
-
 for ASSET_ID in "${ASSET_IDS[@]}";
 do
   echo "Processing asset ID: $ASSET_ID"
