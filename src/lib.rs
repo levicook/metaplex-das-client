@@ -42,6 +42,27 @@ impl DasClient {
             .await
     }
 
+    pub async fn get_assets_by_owner(
+        &self,
+        owner_address: &str,
+        page: u16,
+        limit: u16,
+        // displayOptions?
+    ) -> Result<Asset> {
+        self.send(
+            "getAssetsByOwner",
+            serde_json::json!({
+                "ownerAddress": owner_address,
+                "page": page,
+                "limit": limit,
+                "displayOptions": { // TODO(Levi) consider parameterizing this
+                    "showFungible": true,
+                }
+            }),
+        )
+        .await
+    }
+
     async fn send<T>(&self, method: &str, params: serde_json::Value) -> Result<T>
     where
         T: serde::de::DeserializeOwned, // Ensure T can be deserialized
@@ -64,21 +85,24 @@ impl DasClient {
             .await?;
 
         if response.status().is_success() {
-            let response_body = response.text().await?;
-            println!("{}", response_body);
+            let body = response.text().await?;
+            println!("{}", body);
 
-            let response_body = serde_json::from_str::<Response<T>>(&response_body)?;
-            return Ok(response_body.result);
+            let body = serde_json::from_str::<Response<T>>(&body)?;
+            return Ok(body.result);
         }
 
-        let status_code = response.status();
-        let error_body = response
+        let status = response.status();
+        let body = response
             .text()
             .await
             .unwrap_or_else(|_| "Failed to read response body".to_string());
-        println!("Request failed with status: {}", status_code);
-        println!("Response body: {}", error_body);
-        panic!() // TODO(Levi) turn this into some kind of error
+
+        panic!(
+            // TODO(Levi) turn this into an error
+            "Request failed with status: {}\nResponse body: {}",
+            status, body
+        );
     }
 }
 
@@ -91,19 +115,19 @@ struct Response<T> {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Asset {
-    pub interface: String,
-    pub id: String,
-    pub content: Content,
-    pub authorities: Vec<Authority>,
-    pub compression: Compression,
-    pub grouping: Vec<Grouping>,
-    pub royalty: Royalty,
-    pub creators: Vec<Creator>,
-    pub ownership: Ownership,
+    pub interface: Option<String>,
+    pub id: Option<String>,
+    pub content: Option<Content>,
+    pub authorities: Option<Vec<Authority>>,
+    pub compression: Option<Compression>,
+    pub grouping: Option<Vec<Grouping>>,
+    pub royalty: Option<Royalty>,
+    pub creators: Option<Vec<Creator>>,
+    pub ownership: Option<Ownership>,
     pub uses: Option<Uses>,
     pub supply: Option<Supply>,
-    pub mutable: bool,
-    pub burnt: bool,
+    pub mutable: Option<bool>,
+    pub burnt: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
